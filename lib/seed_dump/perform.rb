@@ -195,7 +195,7 @@ module SeedDump
             shifted -= 1.day if shifted.saturday?
             shifted += 1.day if shifted.sunday?
           end
-          shifted.beginning_of_day + 14.hours
+          shifted.beginning_of_day + 16.hours
         end
 
         EOT
