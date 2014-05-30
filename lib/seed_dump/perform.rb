@@ -118,6 +118,11 @@ module SeedDump
       arr = arr.empty? ? [model.new] : arr
 
       arr.each_with_index { |r,i|
+
+        # hack to avoid DEFAULT ReviewOfSystemsPolicy records from being written as they're already added by the bootstrapper
+        next if r.class.name == 'ReviewOfSystemsPolicy' && r.id == 1
+        next if r.class.name == 'ReviewOfSystemsPolicyReviewOfSystemsQuestionTie' && r.review_of_systems_policy_id == 1
+
         attr_s = [];
         r.attributes.each do |k,v|
           if ((model.attr_accessible[:default].include? k) || @opts['without_protection'] || @opts['with_id'])
@@ -173,15 +178,24 @@ module SeedDump
 
         f << <<-EOT.gsub(/^        /, '')
 
-        DUMP_TIMESTAMP = #{Time.now.beginning_of_day.to_i}
-        RESET_TIMESTAMP = Time.now.beginning_of_day.to_i
+        SECONDS_SINCE_DUMP = (Time.now.utc - Time.parse('#{Time.now.utc.strftime('%Y-%m-%d %H:%M:%S %z')}'))
 
-        def adjust_timestamp(timestamp)
-          adjusted = timestamp + RESET_TIMESTAMP - DUMP_TIMESTAMP
-          time = Time.at(adjusted)
-          time -= 1.day if time.saturday?
-          time += 1.day if time.sunday?
-          (time.beginning_of_day + 14.hours).to_i
+        def shift_date(date, avoid_weekends)
+          adjusted = date + SECONDS_SINCE_DUMP / 1.day
+          if avoid_weekends
+            adjusted -= 1.day if adjusted.saturday?
+            adjusted += 1.day if adjusted.sunday?
+          end
+          adjusted
+        end
+
+        def shift_time(time, avoid_weekends)
+          adjusted = time + SECONDS_SINCE_DUMP
+          if avoid_weekends
+            adjusted -= 1.day if adjusted.saturday?
+            adjusted += 1.day if adjusted.sunday?
+          end
+          adjusted.beginning_of_day + 14.hours
         end
 
         EOT
@@ -196,12 +210,18 @@ module SeedDump
     def attribute_for_inspect(r,k)
       value = r.attributes[k]
 
+      # relative shifting of time/date values may cause dates to fall on weekends resulting in unrealistic data - set this flag to avoid weekends
+      avoid_weekends = true
+      if %w{TreatmentEvent TrackerSignallValue}.include?(r.class.name)
+        avoid_weekends = false
+      end
+
       if value.is_a?(String) && value.length > 50
         "#{value}".inspect
       elsif value.is_a?(Date)
-       "Time.at(adjust_timestamp(#{value.to_time.to_i})).to_date"
+        "shift_date(Date.parse('#{value.strftime('%Y-%m-%d')}'), #{avoid_weekends})"
       elsif value.is_a?(Time)
-       "Time.at(adjust_timestamp(#{value.to_i}))"
+        "shift_time(Time.parse('#{value.strftime('%Y-%m-%d %H:%M:%S %z')}'), #{avoid_weekends})"
       else
         value.inspect
       end
