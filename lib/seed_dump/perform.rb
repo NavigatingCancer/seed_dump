@@ -181,21 +181,21 @@ module SeedDump
         SECONDS_SINCE_DUMP = (Time.now.utc - Time.parse('#{Time.now.utc.strftime('%Y-%m-%d %H:%M:%S %z')}'))
 
         def shift_date(date, avoid_weekends)
-          adjusted = date + SECONDS_SINCE_DUMP / 1.day
+          shifted = date + SECONDS_SINCE_DUMP / 1.day
           if avoid_weekends
-            adjusted -= 1.day if adjusted.saturday?
-            adjusted += 1.day if adjusted.sunday?
+            shifted -= 1.day if shifted.saturday?
+            shifted += 1.day if shifted.sunday?
           end
-          adjusted
+          shifted
         end
 
         def shift_time(time, avoid_weekends)
-          adjusted = time + SECONDS_SINCE_DUMP
+          shifted = time + SECONDS_SINCE_DUMP
           if avoid_weekends
-            adjusted -= 1.day if adjusted.saturday?
-            adjusted += 1.day if adjusted.sunday?
+            shifted -= 1.day if shifted.saturday?
+            shifted += 1.day if shifted.sunday?
           end
-          adjusted.beginning_of_day + 14.hours
+          shifted.beginning_of_day + 14.hours
         end
 
         EOT
@@ -212,7 +212,7 @@ module SeedDump
 
       # relative shifting of time/date values may cause dates to fall on weekends resulting in unrealistic data - set this flag to avoid weekends
       avoid_weekends = true
-      if %w{TreatmentEvent TrackerSignallValue}.include?(r.class.name)
+      if %w{Event TreatmentEvent TrackerSignallValue }.include?(r.class.name)
         avoid_weekends = false
       end
 
