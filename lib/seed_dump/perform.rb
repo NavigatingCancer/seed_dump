@@ -178,24 +178,25 @@ module SeedDump
 
         f << <<-EOT.gsub(/^        /, '')
 
-        SECONDS_SINCE_DUMP = (Time.now.utc - Time.parse('#{Time.now.utc.strftime('%Y-%m-%d %H:%M:%S %z')}'))
+        DAYS_SINCE_DUMP = (Time.now.utc.to_date - Date.parse('#{Time.now.utc.strftime('%Y-%m-%d')}')).to_i
+        puts "Dates will be shifted forward by \#{DAYS_SINCE_DUMP} days"
 
         def shift_date(date, avoid_weekends)
-          shifted = date + SECONDS_SINCE_DUMP / 1.day
+          shifted = date + DAYS_SINCE_DUMP
           if avoid_weekends
-            shifted -= 1.day if shifted.saturday?
-            shifted += 1.day if shifted.sunday?
+            shifted += 2 if shifted.saturday?
+            shifted += 1 if shifted.sunday?
           end
           shifted
         end
 
         def shift_time(time, avoid_weekends)
-          shifted = time + SECONDS_SINCE_DUMP
+          shifted = time + (DAYS_SINCE_DUMP * 1.day)
           if avoid_weekends
-            shifted -= 1.day if shifted.saturday?
+            shifted += 2.day if shifted.saturday?
             shifted += 1.day if shifted.sunday?
           end
-          shifted.beginning_of_day + 16.hours
+          shifted.beginning_of_day + 23.hours
         end
 
         EOT
@@ -221,7 +222,7 @@ module SeedDump
       elsif value.is_a?(Date)
         "shift_date(Date.parse('#{value.strftime('%Y-%m-%d')}'), #{avoid_weekends})"
       elsif value.is_a?(Time)
-        "shift_time(Time.parse('#{value.strftime('%Y-%m-%d %H:%M:%S %z')}'), #{avoid_weekends})"
+        "shift_time(Time.parse('#{value.strftime('%Y-%m-%d %H:%M:%S %z')}').utc, #{avoid_weekends})"
       else
         value.inspect
       end
