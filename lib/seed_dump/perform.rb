@@ -13,6 +13,7 @@ module SeedDump
       @seed_rb = ""
       @id_set_string = ""
       @model_dir = 'app/models/**/*.rb'
+      @today = Time.now.utc.to_date
     end
 
     def setup(env)
@@ -178,11 +179,12 @@ module SeedDump
 
         f << <<-EOT.gsub(/^        /, '')
 
-        DAYS_SINCE_DUMP = (Time.now.utc.to_date - Date.parse('#{Time.now.utc.strftime('%Y-%m-%d')}')).to_i
+        DUMP_TAKEN_ON = Date.parse "#{@today.to_time.strftime("%Y-%m-%d")}"
+        DAYS_SINCE_DUMP = (Time.now.utc.to_date - DUMP_TAKEN_ON).to_i
         puts "Dates will be shifted forward by \#{DAYS_SINCE_DUMP} days"
 
-        def shift_date(date, avoid_weekends)
-          shifted = date + DAYS_SINCE_DUMP
+        def shift_date(days, avoid_weekends)
+          shifted = DUMP_TAKEN_ON + DAYS_SINCE_DUMP + days
           if avoid_weekends
             shifted += 2 if shifted.saturday?
             shifted += 1 if shifted.sunday?
@@ -190,13 +192,8 @@ module SeedDump
           shifted
         end
 
-        def shift_time(time, avoid_weekends)
-          shifted = time + (DAYS_SINCE_DUMP * 1.day)
-          if avoid_weekends
-            shifted += 2.day if shifted.saturday?
-            shifted += 1.day if shifted.sunday?
-          end
-          shifted.beginning_of_day + 23.hours
+        def shift_time(*args)
+          shift_date(*args).to_time.utc.beginning_of_day + 23.hours
         end
 
         EOT
@@ -220,9 +217,9 @@ module SeedDump
       if value.is_a?(String) && value.length > 50
         "#{value}".inspect
       elsif value.is_a?(Date)
-        "shift_date(Date.parse('#{value.strftime('%Y-%m-%d')}'), #{avoid_weekends})"
+        "shift_date(#{-(@today - value).to_i}, #{avoid_weekends})"
       elsif value.is_a?(Time)
-        "shift_time(Time.parse('#{value.strftime('%Y-%m-%d %H:%M:%S %z')}').utc, #{avoid_weekends})"
+        "shift_time(#{-(@today - value.to_date).to_i}, #{avoid_weekends})"
       else
         value.inspect
       end
