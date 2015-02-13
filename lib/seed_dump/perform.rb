@@ -115,7 +115,7 @@ module SeedDump
       rows = []
       arr = []
       arr = model.find(:all, @ar_options) unless @opts['no-data']
-      arr = arr.empty? ? [model.new] : arr
+      return '' if arr.empty?
 
       arr.each_with_index { |r,i|
 
@@ -151,7 +151,7 @@ module SeedDump
     end
 
     def dumpModels
-      @models.sort.each do |model|
+      @models.each do |model|
           m = model.constantize
           if m.ancestors.include?(ActiveRecord::Base) && !m.abstract_class
             puts "Adding #{model} seeds." if @opts['verbose']
