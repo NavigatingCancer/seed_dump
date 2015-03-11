@@ -13,6 +13,7 @@ module SeedDump
       @seed_rb = ""
       @id_set_string = ""
       @model_dir = 'app/models/**/*.rb'
+      @began_on = Date.today
     end
 
     def setup(env)
@@ -30,7 +31,7 @@ module SeedDump
       @opts['max']     = env['MAX'] && env['MAX'].to_i > 0 ? env['MAX'].to_i : nil
       @ar_options      = env['LIMIT'].to_i > 0 ? { :limit => env['LIMIT'].to_i } : {}
       @indent          = " " * (env['INDENT'].nil? ? 2 : env['INDENT'].to_i)
-      p @opts['models']  = @opts['models'].split(',')
+      p @opts['models']  = env['MODELS'].split(',') 
       @opts['habtms']   = (env['HABTMS'] && env['HABTMS'].split(',')) || []
       @opts['schema']  = env['PG_SCHEMA']
       @opts['model_dir']  = env['MODEL_DIR'] || @model_dir
@@ -49,7 +50,6 @@ module SeedDump
       end
       @models.concat(@habtms = @opts['habtms'].map(&:camelize))
     end
-
 
     def loadModels
       puts "Searching in #{@opts['model_dir']} for models" if @opts['debug']
@@ -85,7 +85,7 @@ module SeedDump
         puts "Detected model #{model}" if @opts['debug']
         @models.push model if @opts['models'].include?(model) || @opts['models'].empty?
       end
-      @models.concat(@habtms = @opts['habtms'].map(&:camelize))
+      @models |= @opts['models'].map(&:camelize) | (@habtms = @opts['habtms'].map(&:camelize))
     end
 
     def models
@@ -196,8 +196,8 @@ module SeedDump
         DAYS_SINCE_DUMP = (Time.now.utc.to_date - Date.parse('#{Time.now.utc.strftime('%Y-%m-%d')}')).to_i
         puts "Dates will be shifted forward by \#{DAYS_SINCE_DUMP} days"
 
-        def shift_date(date, avoid_weekends)
-          shifted = date + DAYS_SINCE_DUMP
+        def shift_date(ago, avoid_weekends)
+          shifted = Date.today + ago
           if avoid_weekends
             shifted += 2 if shifted.saturday?
             shifted += 1 if shifted.sunday?
@@ -205,10 +205,10 @@ module SeedDump
           shifted
         end
 
-        def shift_time(time, avoid_weekends)
-          shifted = time + (DAYS_SINCE_DUMP * 1.day)
+        def shift_time(ago, avoid_weekends)
+          shifted = Time.now + ago.days
           if avoid_weekends
-            shifted += 2.day if shifted.saturday?
+            shifted += 2.days if shifted.saturday?
             shifted += 1.day if shifted.sunday?
           end
           shifted.beginning_of_day + 23.hours
@@ -234,12 +234,24 @@ module SeedDump
         avoid_weekends = false
       end
 
-      if value.is_a?(String) && value.length > 50
-        "#{value}".inspect
-      elsif value.is_a?(Date)
-        "shift_date(Date.parse('#{value.strftime('%Y-%m-%d')}'), #{avoid_weekends})"
-      elsif value.is_a?(Time)
-        "shift_time(Time.parse('#{value.strftime('%Y-%m-%d %H:%M:%S %z')}').utc, #{avoid_weekends})"
+
+      if value.kind_of?(String) 
+        if value.length > 50
+          "#{value}".inspect
+        else
+          value.inspect
+        end
+      elsif value.respond_to? :to_time
+        begin
+          days_ago = @began_on - value.to_date
+        rescue Exception => e
+          puts "#{e.message} encountered for value #{value}"
+        end
+        if value.is_a?(Date)
+          "shift_date(#{days_ago}, #{avoid_weekends})"
+        else
+          "shift_time(#{days_ago}, #{avoid_weekends})"
+        end
       else
         value.inspect
       end
