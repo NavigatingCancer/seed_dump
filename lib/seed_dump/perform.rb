@@ -213,7 +213,7 @@ module SeedDump
 
       # relative shifting of time/date values may cause dates to fall on weekends resulting in unrealistic data - set this flag to avoid weekends
       avoid_weekends = true
-      if %w{Event TreatmentEvent TrackerSignallValue VisitPreparation Clinic::InformationPrescriptionContentClinicPatientLinkTie}.include?(r.class.name)
+      if %w{CareManagement::AdherenceCheckIn Event TreatmentEvent TrackerSignallValue VisitPreparation Clinic::InformationPrescriptionContentClinicPatientLinkTie}.include?(r.class.name)
         avoid_weekends = false
       end
 
