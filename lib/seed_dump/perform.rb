@@ -211,9 +211,15 @@ module SeedDump
     def attribute_for_inspect(r,k)
       value = r.attributes[k]
 
-      # relative shifting of time/date values may cause dates to fall on weekends resulting in unrealistic data - set this flag to avoid weekends
+      # relative shifting of time/date values may cause dates to fall on weekends resulting 
+      # in unrealistic data - set this flag to avoid weekends
       avoid_weekends = true
-      if %w{CareManagement::AdherenceCheckIn Event TreatmentEvent TrackerSignallValue VisitPreparation Clinic::InformationPrescriptionContentClinicPatientLinkTie}.include?(r.class.name)
+      include_weekends_classes = %w{
+        Event TreatmentEvent TrackerSignallValue VisitPreparation 
+        Clinic::InformationPrescriptionContentClinicPatientLinkTie 
+      }
+
+      if include_weekends_classes.include?(r.class.name) || r.class.name =~ /CareManagement/
         avoid_weekends = false
       end
 
