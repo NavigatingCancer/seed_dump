@@ -20,7 +20,6 @@ Gem::Specification.new do |s|
     "MIT-LICENSE",
     "README.rdoc",
     "Rakefile",
-    "VERSION",
     "lib/clip.rb",
     "lib/seed_dump.rb",
     "lib/seed_dump/perform.rb",
