@@ -199,6 +199,15 @@ module SeedDump
           shifted.beginning_of_day + 23.hours
         end
 
+        def shift_month(date, avoid_weekends)
+          shifted = (date + DAYS_SINCE_DUMP).beginning_of_month
+          if avoid_weekends
+            shifted += 2.day if shifted.saturday?
+            shifted += 1.day if shifted.sunday?
+          end
+          shifted
+        end
+
         EOT
 
         f << "ActiveRecord::Base.connection.execute('SET FOREIGN_KEY_CHECKS=0')\n"
@@ -217,7 +226,16 @@ module SeedDump
       include_weekends_classes = %w{
         Event TreatmentEvent TrackerSignallValue VisitPreparation 
         Clinic::InformationPrescriptionContentClinicPatientLinkTie 
+        ChronicCare::PatientMonthlyTimeReport
       }
+
+      shift_month_classes = %w{ ChronicCare::PatientMonthlyTimeReport }
+
+      if shift_month_classes.include?(r.class.name) && k == "month"
+        date_shift_method = "shift_month"
+      else
+        date_shift_method = "shift_date"
+      end
 
       if include_weekends_classes.include?(r.class.name) || r.class.name =~ /CareManagement/
         avoid_weekends = false
@@ -226,7 +244,7 @@ module SeedDump
       if value.is_a?(String) && value.length > 50
         "#{value}".inspect
       elsif value.is_a?(Date)
-        "shift_date(Date.parse('#{value.strftime('%Y-%m-%d')}'), #{avoid_weekends})"
+        "#{date_shift_method}(Date.parse('#{value.strftime('%Y-%m-%d')}'), #{avoid_weekends})"
       elsif value.is_a?(Time)
         "shift_time(Time.parse('#{value.strftime('%Y-%m-%d %H:%M:%S %z')}').utc, #{avoid_weekends})"
       else
