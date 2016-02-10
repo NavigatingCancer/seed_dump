@@ -224,9 +224,11 @@ module SeedDump
       # in unrealistic data - set this flag to avoid weekends
       avoid_weekends = true
       include_weekends_classes = %w{
-        Event TreatmentEvent TrackerSignallValue VisitPreparation 
+        Event TreatmentEvent TrackerSignalValue VisitPreparation
         Clinic::InformationPrescriptionContentClinicPatientLinkTie 
-        ChronicCare::PatientMonthlyTimeReport
+        ChronicCare::PatientMonthlyTimeReport CareManagement::SymptomReport
+        CareManagement::StatusReason CareManagement::HealthTrackerStatus
+        CareManagement::CheckIn CareManagement::AdherenceReport
       }
 
       shift_month_classes = %w{ ChronicCare::PatientMonthlyTimeReport }
