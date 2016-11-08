@@ -231,7 +231,7 @@ module SeedDump
         CareManagement::CheckIn CareManagement::AdherenceReport
       }
 
-      shift_month_classes = %w{ ChronicCare::PatientMonthlyTimeReport }
+      shift_month_classes = %w{ PatientNavigation::ChronicCareMonthlyTimeReport }
 
       if shift_month_classes.include?(r.class.name) && k == "month"
         date_shift_method = "shift_month"
