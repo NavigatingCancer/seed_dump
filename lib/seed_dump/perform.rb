@@ -190,13 +190,14 @@ module SeedDump
           shifted
         end
 
-        def shift_time(time, avoid_weekends)
+        def shift_time(time, avoid_weekends, shift_time_of_day)
           shifted = time + (DAYS_SINCE_DUMP * 1.day)
           if avoid_weekends
             shifted += 2.day if shifted.saturday?
             shifted += 1.day if shifted.sunday?
           end
-          shifted.beginning_of_day + 23.hours
+          shifted = shifted.beginning_of_day + 23.hours if shift_time_of_day
+          shifted
         end
 
         def shift_month(date, avoid_weekends)
@@ -231,6 +232,12 @@ module SeedDump
         CareManagement::CheckIn CareManagement::AdherenceReport
       }
 
+      shift_time_of_day = true
+      avoid_time_of_day_shift_classes = %w{ TriagePathways::Incident }
+      if avoid_time_of_day_shift_classes.include?(r.class.name)
+        shift_time_of_day = false
+      end
+
       shift_month_classes = %w{ PatientNavigation::ChronicCareMonthlyTimeReport }
 
       if shift_month_classes.include?(r.class.name) && k == "month"
@@ -248,7 +255,7 @@ module SeedDump
       elsif value.is_a?(Date)
         "#{date_shift_method}(Date.parse('#{value.strftime('%Y-%m-%d')}'), #{avoid_weekends})"
       elsif value.is_a?(Time)
-        "shift_time(Time.parse('#{value.strftime('%Y-%m-%d %H:%M:%S %z')}').utc, #{avoid_weekends})"
+        "shift_time(Time.parse('#{value.strftime('%Y-%m-%d %H:%M:%S %z')}').utc, #{avoid_weekends}, #{shift_time_of_day})"
       else
         value.inspect
       end
