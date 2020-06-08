@@ -1,5 +1,3 @@
-require 'pry'
-
 class SeedDump
   module Environment
     def dump_using_environment(env = {})
